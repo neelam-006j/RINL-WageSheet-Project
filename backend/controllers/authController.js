@@ -408,15 +408,20 @@ async function notifySignup(user, req) {
 
   if (mailConfig.gmailUser && mailConfig.gmailPass && emailRecipients.length) {
     notifications.email.attempted = true;
-    tasks.push({
-      type: 'email',
-      task: transporter.sendMail({
-        from: `"RINL Wage Portal" <${mailConfig.gmailUser}>`,
-        to: emailRecipients,
-        subject: `New signup: ${user.name} (${user.role})`,
-        text,
-        html: signupNotificationHtml(user, req)
-      })
+    emailRecipients.forEach((email, index) => {
+      tasks.push({
+        type: 'email',
+        recipient: email,
+        task: new Promise((resolve) => setTimeout(resolve, index * 500)).then(() =>
+          transporter.sendMail({
+            from: `"RINL Wage Portal" <${mailConfig.gmailUser}>`,
+            to: email, // Changed from array to individual recipient
+            subject: `New signup: ${user.name} (${user.role})`,
+            text,
+            html: signupNotificationHtml(user, req)
+          })
+        )
+      });
     });
   } else {
     notifications.email.message = 'Email notification not configured. Add active email rows to notification_recipients, or set EMAIL, EMAIL_PASSWORD, and SIGNUP_NOTIFY_EMAIL.';
@@ -523,17 +528,22 @@ async function notifyLoginActivity(action, user, req, reason = '') {
   const tasks = [];
 
   if (mailConfig.gmailUser && mailConfig.gmailPass && emailRecipients.length) {
-    tasks.push({
-      type: 'email',
-      task: transporter.sendMail({
-        from: `"RINL Wage Portal" <${mailConfig.gmailUser}>`,
-        to: emailRecipients,
-        subject: action === 'LOGIN_FAILED'
-          ? `Failed login attempt: ${user.emp_id || 'unknown'}`
-          : `New login: ${user.name || user.emp_id || 'unknown'} (${user.role || 'Unknown'})`,
-        text,
-        html: activityNotificationHtml(action, user, req, reason)
-      })
+    emailRecipients.forEach((email, index) => {
+      tasks.push({
+        type: 'email',
+        recipient: email,
+        task: new Promise((resolve) => setTimeout(resolve, index * 500)).then(() =>
+          transporter.sendMail({
+            from: `"RINL Wage Portal" <${mailConfig.gmailUser}>`,
+            to: email, // Changed from array to individual recipient
+            subject: action === 'LOGIN_FAILED'
+              ? `Failed login attempt: ${user.emp_id || 'unknown'}`
+              : `New login: ${user.name || user.emp_id || 'unknown'} (${user.role || 'Unknown'})`,
+            text,
+            html: activityNotificationHtml(action, user, req, reason)
+          })
+        )
+      });
     });
   }
 
